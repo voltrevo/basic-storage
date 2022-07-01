@@ -7,7 +7,7 @@ import nil from "./nil.ts";
 export default class Database {
   constructor(public sqliteDb: sqlite.DB) {
     sqliteDb.query(`
-      CREATE IF NOT EXISTS basicStorage (
+      CREATE TABLE IF NOT EXISTS basicStorage (
         key BLOB PRIMARY KEY,
         value BLOB NOT NULL
       )
@@ -20,9 +20,9 @@ export default class Database {
       [key],
     );
 
-    assertType(rows, io.array(io.type({ value: ioBuffer })));
+    assertType(rows, io.array(io.tuple([ioBuffer])));
 
-    return rows[0]?.value;
+    return rows[0][0];
   }
 
   write(key: Uint8Array, value: Uint8Array | nil) {

@@ -59,3 +59,17 @@ export type RpcImpl = {
     ...params: io.TypeOf<RpcMap[M]["Params"]>
   ) => Promise<io.TypeOf<RpcMap[M]["Response"]>>;
 };
+
+export const Response = io.type({
+  id: io.string,
+  result: io.union([
+    io.type({
+      ok: io.unknown,
+    }),
+    io.type({
+      error: io.type({
+        message: io.string,
+      }),
+    }),
+  ]),
+});
