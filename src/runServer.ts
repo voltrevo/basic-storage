@@ -16,22 +16,44 @@ export default function runServer() {
     const { socket: ws, response } = Deno.upgradeWebSocket(req);
 
     ws.onmessage = async (ev) => {
-      const request = unpack(ev.data);
+      const request = unpack(new Uint8Array(ev.data));
       assertType(request, Request);
       assertType(request.params, rpcMap[request.method].Params);
 
-      const response = await (rpcImpl[request.method] as ExplicitAny)(
-        ...request.params,
-      );
+      console.log({ request });
 
-      return pack({
+      let result;
+
+      try {
+        result = {
+          ok: await (rpcImpl[request.method] as ExplicitAny)(
+            ...request.params,
+          ),
+        };
+      } catch (error) {
+        console.error(request.id, error);
+
+        result = {
+          error: {
+            message: `See server logs for id ${request.id}`,
+          },
+        };
+      }
+
+      const response = {
         id: request.id,
-        response,
-      });
+        result,
+      };
+
+      console.log({ response });
+
+      ws.send(pack(response));
     };
 
     return response;
   }
 
-  serve(reqHandler, { port: 15636 });
+  const port = 15636;
+  serve(reqHandler, { port });
+  console.log(`basic-storage running on port ${port}`);
 }
