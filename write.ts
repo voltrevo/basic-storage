@@ -7,7 +7,7 @@ const [key, value] = Deno.args as [string, string | nil];
 
 const sock = await RpcWebsocket("ws://localhost:15636");
 
-sock.rpc.write(
+await sock.rpc.write(
   new TextEncoder().encode(key),
   value === nil ? nil : new TextEncoder().encode(value),
 );

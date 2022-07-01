@@ -1,7 +1,7 @@
 import { pack, serve, unpack } from "./deps.ts";
 
 import assertType from "./assertType.ts";
-import { Request, rpcMap } from "./Rpc.ts";
+import { Request as RpcRequest, rpcMap } from "./Rpc.ts";
 import RpcImpl from "./RpcImpl.ts";
 import ExplicitAny from "./ExplicitAny.ts";
 
@@ -17,8 +17,8 @@ export default function runServer() {
 
     ws.onmessage = async (ev) => {
       const request = unpack(new Uint8Array(ev.data));
-      assertType(request, Request);
-      assertType(request.params, rpcMap[request.method].Params);
+      assertType(request, RpcRequest);
+      assertType(request.params, rpcMap[request.method].Params as ExplicitAny);
 
       console.log({ request });
 
@@ -47,7 +47,9 @@ export default function runServer() {
 
       console.log({ response });
 
-      ws.send(pack(response));
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(pack(response));
+      }
     };
 
     return response;
