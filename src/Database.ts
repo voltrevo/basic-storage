@@ -22,6 +22,10 @@ export default class Database {
 
     assertType(rows, io.array(io.tuple([ioBuffer])));
 
+    if (rows.length === 0) {
+      return nil;
+    }
+
     return rows[0][0];
   }
 

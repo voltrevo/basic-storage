@@ -1,21 +1,7 @@
-import { pack, unpack } from "./src/deps.ts";
+import { RpcWebsocket } from "./src/Rpc.ts";
 
-const sock = new WebSocket("ws://localhost:15636");
+const sock = await RpcWebsocket("ws://localhost:15636");
 
-sock.onopen = () => {
-  console.log("Sending ping");
+console.log(await sock.rpc.ping());
 
-  sock.send(pack({
-    id: "test-id",
-    method: "ping",
-    params: [],
-  }));
-
-  sock.onmessage = async (ev) => {
-    console.log(
-      "Received",
-      unpack(new Uint8Array(await ev.data.arrayBuffer())),
-    );
-    sock.close();
-  };
-};
+sock.close();

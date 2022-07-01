@@ -1,13 +1,17 @@
-import { io } from "./deps.ts";
+import { io, mapValues, pack, unpack } from "./deps.ts";
 
 import emptyTuple from "./emptyTuple.ts";
 import ExplicitAny from "./ExplicitAny.ts";
 import ioBuffer from "./ioBuffer.ts";
+import RandomId from "./RandomId.ts";
+import assert from "./assert.ts";
+import assertType from "./assertType.ts";
+import nil from "./nil.ts";
 
 export const rpcMap = {
   ping: {
     Params: emptyTuple,
-    Response: io.literal("pong"),
+    Output: io.literal("pong"),
   },
   read: {
     Params: io.tuple([
@@ -20,7 +24,7 @@ export const rpcMap = {
         }),
       ]),
     ]),
-    Response: io.union([
+    Output: io.union([
       io.undefined,
       ioBuffer,
       io.literal("please-retry"),
@@ -32,11 +36,11 @@ export const rpcMap = {
       ioBuffer,
       io.union([io.undefined, ioBuffer]),
     ]),
-    Response: io.void,
+    Output: io.void,
   },
   cancel: {
     Params: io.tuple([io.string]),
-    Response: io.void,
+    Output: io.void,
   },
 };
 
@@ -54,10 +58,12 @@ export const Request = io.type({
   params: io.array(io.unknown),
 });
 
+export type Request = io.TypeOf<typeof Request>;
+
 export type RpcImpl = {
   [M in RequestMethodName]: (
     ...params: io.TypeOf<RpcMap[M]["Params"]>
-  ) => Promise<io.TypeOf<RpcMap[M]["Response"]>>;
+  ) => Promise<io.TypeOf<RpcMap[M]["Output"]>>;
 };
 
 export const Response = io.type({
@@ -73,3 +79,76 @@ export const Response = io.type({
     }),
   ]),
 });
+
+export type Response = io.TypeOf<typeof Response>;
+
+type RpcClient = {
+  [M in RequestMethodName]: (
+    ...params: io.TypeOf<RpcMap[M]["Params"]>
+  ) => Promise<io.TypeOf<RpcMap[M]["Output"]>>;
+};
+
+export function RpcClient(
+  send: (request: Request) => void,
+  setMessageHandler: (handler: (response: unknown) => void) => void,
+): RpcClient {
+  const handlers: Record<string, ((response: Response) => void) | nil> = {};
+
+  setMessageHandler((response) => {
+    assertType(response, Response);
+    const handler = handlers[response.id];
+    assert(handler !== nil);
+    delete handlers[response.id];
+    handler(response);
+  });
+
+  return mapValues(rpcMap, ({ Output }, method) =>
+    (...params: unknown[]) => {
+      const id = RandomId();
+
+      send({
+        id,
+        method,
+        params,
+      });
+
+      return new Promise<ExplicitAny>((resolve, reject) => {
+        handlers[id] = (response) => {
+          if ("error" in response.result) {
+            reject(new Error(response.result.error.message));
+            return;
+          }
+
+          assertType(response.result.ok, Output as ExplicitAny);
+          resolve(response.result.ok);
+        };
+      });
+    });
+}
+
+export async function RpcWebsocket(
+  address: string,
+): Promise<{ rpc: RpcClient; close: () => void }> {
+  const ws = new WebSocket(address);
+
+  await new Promise((resolve, reject) => {
+    ws.onopen = resolve;
+    ws.onerror = (ev) =>
+      reject(new Error("message" in ev ? ev.message : "unexpected ws error"));
+  });
+
+  const rpc = RpcClient(
+    (request) => ws.send(pack(request)),
+    (handler) => {
+      ws.onmessage = async (ev) =>
+        handler(unpack(new Uint8Array(await ev.data.arrayBuffer())));
+    },
+  );
+
+  return {
+    rpc,
+    close: () => {
+      ws.close();
+    },
+  };
+}

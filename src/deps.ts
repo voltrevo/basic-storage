@@ -11,3 +11,5 @@ export const unpack = untypedUnpack as (packed: Uint8Array) => unknown;
 export * as io from "https://esm.sh/io-ts";
 
 export * as sqlite from "https://deno.land/x/sqlite@v3.4.0/mod.ts";
+
+export { mapValues } from "https://esm.sh/@s-libs/micro-dash@14.0.0";
