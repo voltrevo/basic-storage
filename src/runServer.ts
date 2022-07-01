@@ -10,7 +10,7 @@ export default function runServer() {
 
   function reqHandler(req: Request) {
     if (req.headers.get("upgrade") != "websocket") {
-      return new Response(null, { status: 501 });
+      return new Response(`Hi, I'm a websocket server`, { status: 200 });
     }
 
     const { socket: ws, response } = Deno.upgradeWebSocket(req);
