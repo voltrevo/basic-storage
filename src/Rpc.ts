@@ -2,11 +2,41 @@ import { io } from "./deps.ts";
 
 import emptyTuple from "./emptyTuple.ts";
 import ExplicitAny from "./ExplicitAny.ts";
+import ioBuffer from "./ioBuffer.ts";
 
 export const rpcMap = {
   ping: {
     Params: emptyTuple,
     Response: io.literal("pong"),
+  },
+  read: {
+    Params: io.tuple([
+      ioBuffer,
+      io.union([
+        io.undefined,
+        io.type({
+          id: io.string,
+          value: io.union([io.undefined, ioBuffer]),
+        }),
+      ]),
+    ]),
+    Response: io.union([
+      io.undefined,
+      ioBuffer,
+      io.literal("please-retry"),
+      io.literal("cancelled"),
+    ]),
+  },
+  write: {
+    Params: io.tuple([
+      ioBuffer,
+      io.union([io.undefined, ioBuffer]),
+    ]),
+    Response: io.void,
+  },
+  cancel: {
+    Params: io.tuple([io.string]),
+    Response: io.void,
   },
 };
 
