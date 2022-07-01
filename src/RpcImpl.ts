@@ -6,7 +6,8 @@ import nil from "./nil.ts";
 import optionalBuffersEqual from "./optionalBuffersEqual.ts";
 
 export default function RpcImpl(): Partial<RpcImpl> {
-  const db = new Database(new sqlite.DB("basic-storage.db"));
+  Deno.mkdir("data", { recursive: true });
+  const db = new Database(new sqlite.DB("data/basic-storage.db"));
 
   const changeEvents = new EventEmitter<
     { [key: string]: (value: Uint8Array | nil) => void }
