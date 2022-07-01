@@ -9,3 +9,5 @@ export const pack = untypedPack as (value: unknown) => Uint8Array;
 export const unpack = untypedUnpack as (packed: Uint8Array) => unknown;
 
 export * as io from "https://esm.sh/io-ts";
+
+export * as sqlite from "https://deno.land/x/sqlite@v3.4.0/mod.ts";
