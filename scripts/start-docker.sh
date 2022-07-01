@@ -10,4 +10,4 @@ docker run \
   --net=host \
   --mount type=bind,source="$SCRIPT_DIR/../data",target=/app/data \
   --restart=unless-stopped \
-  "basic-storage:$TAG"
+  "$REPO:$TAG"
