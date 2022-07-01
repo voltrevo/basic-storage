@@ -19,7 +19,7 @@ export const rpcMap = {
       io.union([
         io.undefined,
         io.type({
-          id: io.string,
+          cancelId: io.string,
           value: io.union([io.undefined, ioBuffer]),
         }),
       ]),
